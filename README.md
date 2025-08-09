@@ -238,3 +238,91 @@ export default routes;
 ## 2. khai báo thư viện trong index.js
 
 - import 'bootstrap/dist/css/bootstrap.min.css';
+
+# 6. sử lý ảnh
+
+## 1. tạo file service cho upload ảnh
+
+- code có dạng:
+  const API_URL = process.env.REACT_APP_API_URL;
+
+export const UploadImage = async (imageFile) => {
+const formData = new FormData();
+formData.append("image", imageFile);
+try {
+const res = await fetch(`${API_URL}/users/uploadImage`, {
+method: "POST",
+body: formData,
+});
+
+    if (!res.ok) {
+      throw new Error("Lỗi khi tải lên hình ảnh");
+    }
+
+    const data = await res.json();
+    return data.url; // Trả về URL của hình ảnh đã tải lên
+
+} catch (error) {
+console.error("Lỗi khi gọi API UploadImage:", error);
+throw error;
+}
+};
+
+- trong đó: append có tác dụng gôm biến được truyền vào trường khóa nếu muốn truyền nhiều file thì gọi append nhiều lần
+
+## 2. tạo file component để dùng
+
+- code:
+  import { useState } from "react";
+  import { UploadImage } from "../Services/uploadImageService";
+
+export default function ImageUploader() {
+const [image, setImage] = useState(null);
+const [preview, setPreview] = useState(null);
+const [loading, setLoading] = useState(false);
+
+const handleFileChange = (e) => {
+const file = e.target.files[0];
+setImage(file);
+setPreview(URL.createObjectURL(file)); // tạo link hiện file từ file
+};
+
+const handleUpload = async () => {
+if (!image) {
+alert("Vui lòng chọn ảnh!");
+return;
+}
+
+    setLoading(true);
+    try {
+      const data = await UploadImage(image); // gọi API lúc này hàm sẽ trả về url
+      if (data) {
+        alert("Upload thành công!");
+        setPreview(data); // Link Cloudinary
+      } else {
+        alert("Upload thất bại!");
+      }
+    } catch (err) {
+      alert("Lỗi khi upload ảnh!");
+    } finally {
+      setLoading(false);
+    }
+
+};
+
+return (
+
+<div style={{ padding: "20px" }}>
+<input type="file" accept="image/*" onChange={handleFileChange} />
+{preview && (
+<div style={{ marginTop: "10px" }}>
+<img src={preview} alt="Preview" width="300" />
+</div>
+)}
+<br />
+<button onClick={handleUpload} disabled={loading}>
+{loading ? "Đang upload..." : "Upload"}
+</button>
+</div>
+);
+}
